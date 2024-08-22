@@ -183,6 +183,22 @@ void aes_indep_key(uint8_t * key)
     AES128_ECB_indp_setkey(key);
 }
 
+void aes_indep_pt(uint8_t index ,uint8_t * pt)
+{
+    AES128_ECB_indp_setpt(index, pt);
+}
+
+void aes_indep_result(uint8_t index ,uint8_t * pt)
+{
+    AES128_ECB_indp_obtainpt(index, pt);
+}
+
+
+void aes_indep_enc_interleave()
+{
+    AES128_ECB_indp_crypto_interleave();
+}
+
 void aes_indep_enc(uint8_t * pt)
 {
 	AES128_ECB_indp_crypto(pt);

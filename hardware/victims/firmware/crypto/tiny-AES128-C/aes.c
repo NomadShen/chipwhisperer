@@ -67,6 +67,8 @@ NOTE:   String length must be evenly divisible by 16byte (str_len % 16 == 0)
 typedef uint8_t state_t[4][4];
 static state_t* state;
 
+static state_t plaintext[4];
+
 // The array that stores the round keys.
 static uint8_t RoundKey[176];
 
@@ -451,6 +453,7 @@ static void Cipher(void)
   // There will be Nr rounds.
   // The first Nr-1 rounds are identical.
   // These Nr-1 rounds are executed in the loop below.
+
   for(round = 1; round < Nr; ++round)
   {
     SubBytes();
@@ -458,6 +461,38 @@ static void Cipher(void)
     MixColumns();
     AddRoundKey(round);
   }
+  
+  // The last round is given below.
+  // The MixColumns function is not here in the last round.
+  SubBytes();
+  ShiftRows();
+  AddRoundKey(Nr);
+}
+
+// First round of cipher.
+static void Cipher_first_round(uint8_t index)
+{
+  state = &plaintext[index];
+  // Add the First round key to the state before starting the rounds.
+  AddRoundKey(0); 
+}
+
+// intermediate round of cipher
+static void Cipher_intermediate_round(uint8_t index,uint8_t round)
+{
+
+  state = &plaintext[index];
+
+  SubBytes();
+  ShiftRows();
+  MixColumns();
+  AddRoundKey(round);
+}
+
+static void Cipher_last_round(uint8_t index)
+{
+  
+  state = &plaintext[index];
   
   // The last round is given below.
   // The MixColumns function is not here in the last round.
@@ -512,11 +547,38 @@ void AES128_ECB_indp_setkey(uint8_t* key)
   KeyExpansion();
 }
 
+void AES128_ECB_indp_setpt(uint8_t index, uint8_t* pt)
+{
+
+  BlockCopy((uint8_t *)(&plaintext[index]), pt) ;//copy pt pointer into the plaintext point array
+}
+
+
+void AES128_ECB_indp_obtainpt(uint8_t index, uint8_t* pt)
+{
+  BlockCopy(pt, (uint8_t*)(&plaintext[index])) ;
+}
+
 void AES128_ECB_indp_crypto(uint8_t* input)
 {
   state = (state_t*)input;
-  BlockCopy(input_save, input);
+  BlockCopy(input_save, input);//for jitter
   Cipher();
+}
+
+void AES128_ECB_indp_crypto_interleave()
+{
+  uint8_t i = 0;
+  uint8_t round = 0;
+  for(i = 0;i < 4;i++) 
+    Cipher_first_round(i);
+
+  for(round = 1; round < Nr; round++)
+    for(i = 0;i < 4;i++) 
+      Cipher_intermediate_round(i, round);
+
+  for(i = 0;i < 4;i++)
+    Cipher_last_round(i);
 }
 
 void AES128_ECB_encrypt(uint8_t* input, uint8_t* key, uint8_t* output)

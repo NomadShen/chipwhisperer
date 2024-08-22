@@ -34,6 +34,25 @@ uint8_t get_key(uint8_t* k, uint8_t len)
 	return 0x00;
 }
 
+uint8_t set_pt(uint8_t*pt, uint8_t index)//set 4 AES plaintexts
+{
+    aes_indep_pt(index, pt);
+	return 0x00;
+}
+
+uint8_t enc_interleave(uint8_t* pt, uint8_t index)// interleaved multi AES
+{
+    
+	trigger_high();
+    aes_indep_enc_interleave();
+    
+	trigger_low();
+
+    aes_indep_result(index, pt);
+    simpleserial_put('r', 16, pt);
+    return 0x00;
+}
+
 uint8_t get_pt(uint8_t* pt, uint8_t len)
 {
     aes_indep_enc_pretrigger(pt);
@@ -121,6 +140,54 @@ uint8_t aes(uint8_t cmd, uint8_t scmd, uint8_t len, uint8_t *buf)
         if (err)
             return err;
     }
+    
+    if (scmd == 0x08) {//pt0
+        req_len += 16;
+        if (req_len > len) {
+            return SS_ERR_LEN;
+        }
+        err = set_pt(buf, 0);
+        if (err)
+            return err;
+    }    
+    if (scmd & 0x10) {//pt1
+        req_len += 16;
+        if (req_len > len) {
+            return SS_ERR_LEN;
+        }
+        err = set_pt(buf, 1);
+        if (err)
+            return err;
+    }    
+    if (scmd & 0x20) {//pt2
+        req_len += 16;
+        if (req_len > len) {
+            return SS_ERR_LEN;
+        }
+        err = set_pt(buf, 2);
+        if (err)
+            return err;
+    }    
+    if (scmd & 0x40) {//pt3
+        req_len += 16;
+        if (req_len > len) {
+            return SS_ERR_LEN;
+        }
+        err = set_pt(buf, 3);
+        if (err)
+            return err;
+    }    
+    if (scmd & 0x80) {//execute AES
+        req_len += 16;
+        if (req_len > len) {
+            return SS_ERR_LEN;
+        }
+        err = enc_interleave(buf, 1);
+        
+        //err = get_pt(buf + req_len - 16, 16);
+        if (err)
+            return err;
+    }    
 
     if (len != req_len) {
         return SS_ERR_LEN;

@@ -48,4 +48,9 @@ void aes_indep_enc_pretrigger(uint8_t * pt);
 void aes_indep_enc_posttrigger(uint8_t * pt);
 void aes_indep_mask(uint8_t * m, uint8_t len);
 
+//new
+void aes_indep_pt(uint8_t index,uint8_t * pt);
+void aes_indep_enc_interleave();
+void aes_indep_result(uint8_t index,uint8_t * pt);
+
 #endif

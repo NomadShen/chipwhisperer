@@ -38,7 +38,7 @@ class SimpleSerial2_Err:
     ERR_LEN = 4
     ERR_FRAME_BYTE = 5
 
-bytearray = util.bytearray # type: ignore
+bytearray = util.CWByteArray # type: ignore
 
 
 class SimpleSerial2(TargetTemplate):
@@ -225,6 +225,16 @@ class SimpleSerial2(TargetTemplate):
             self.send_cmd(0x01, 0x01, data)
         elif cmd == 'k':
             self.send_cmd(0x01, 0x02, data)
+        elif cmd == 'a':
+            self.send_cmd(0x01, 0x08, data)
+        elif cmd == 'b':
+            self.send_cmd(0x01, 0x10, data)
+        elif cmd == 'c':
+            self.send_cmd(0x01, 0x20, data)
+        elif cmd == 'd':
+            self.send_cmd(0x01, 0x40, data)
+        elif cmd == 'g':
+            self.send_cmd(0x01, 0x80, data)
         else:
             self.send_cmd(cmd, 0x00, data)
 
@@ -615,10 +625,20 @@ class SimpleSerial2(TargetTemplate):
             self.flush()
             time.sleep(0.05)
 
-    def write(self, data):
+    def write(self, data, timeout=0):
+        """ Writes data to the target over serial.
+
+        Args:
+            data (str): Data to write over serial.
+            timeout (float or None): Wait <timeout> seconds for write buffer to clear.
+                If None, block for a long time. If 0, return immediately. Defaults to 0.
+
+        Raises:
+            Warning: Target not connected
+        """
         if type(data) is list:
             data = bytearray(data)
-        self.ser.write(data)
+        self.ser.write(data, timeout)
 
     @property
     def baud(self):
@@ -667,6 +687,34 @@ class SimpleSerial2(TargetTemplate):
             if ack:
                 if self.simpleserial_wait_ack(timeout) is None:
                     self.reset_comms()
+
+    
+    def set_pt(self,pt_index, pt):
+        """Send the plaintext
+
+        Uses simpleserial_write('a/b/c/d')
+
+        Args:
+            key (bytearray): key to send
+            ack (bool, optional): Wait for ack after sending key. Defaults to
+                True.
+            timeout (int, optional): How long in ms to wait for the ack.
+                Defaults to 250.
+
+        Raises:
+            Warning: Device did not ack or error during read.
+        """
+
+        self.reset_comms()
+        if pt_index == 0:
+            self.simpleserial_write('a', pt)
+        elif pt_index == 1:
+            self.simpleserial_write('b', pt)
+        elif pt_index == 2:
+            self.simpleserial_write('c', pt)
+        elif pt_index == 3:
+            self.simpleserial_write('d', pt)
+        self.reset_comms()
 
     def in_waiting(self):
         """Returns the number of characters available from the serial buffer.
